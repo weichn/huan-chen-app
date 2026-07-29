@@ -3,6 +3,128 @@ import {
   Search, Star, MessageCircle, Shield, Coins, ChevronLeft, Check, Clock,
   Lock, X, ChevronDown, AlertTriangle, Users, CheckCircle2, XCircle, Send,
 } from "lucide-react";
+import { supabase } from "./supabaseClient";
+useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 從 Supabase 的各個資料表撈取資料
+        const { data: agentsData, error: agentsErr } = await supabase.from('agents').select('*');
+        const { data: casesData, error: casesErr } = await supabase.from('cases').select('*');
+        const { data: txData, error: txErr } = await supabase.from('transactions').select('*');
+        const { data: visitsData, error: visitsErr } = await supabase.from('visits').select('*');
+
+        if (agentsErr || casesErr || txErr) throw new Error("資料撈取失敗");
+
+        // 如果資料庫還是空的，可以先塞入您的 SEED_AGENTS 假資料作為預設值
+        setAgents(agentsData?.length ? agentsData : SEED_AGENTS); 
+        setCases(casesData || []);
+        setTransactions(txData || []);
+        
+        // Visits 若設計為單筆 key-value，可能需要組裝一下，這裡先預設空物件
+        setVisits(visitsData?.length ? visitsData[0] : {}); 
+        
+      } catch (error) {
+        console.error("載入 Supabase 資料失敗:", error);
+        showToast("資料載入失敗，請重新整理", "warn");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+const createCase = async (data) => {
+    if (detectContact(data.problemText)) {
+      showToast("偵測到案件說明中可能包含聯繫方式，請勿留下電話或Line，以免遭不法業者或詐騙集團利用", "warn");
+      return null;
+    }
+    const newCase = {
+      id: uid("case"),
+      customerName: data.customerName.trim(),
+      customerContact: data.customerContact.trim(),
+      region: data.region,
+      caseType: data.caseType,
+      problemText: data.problemText.trim(),
+      status: "open", 
+      matchedAgentId: null,
+      threads: {}, 
+      ts: Date.now(),
+    };
+
+    // --- Supabase 寫入邏輯 ---
+    const { error } = await supabase.from('cases').insert([newCase]);
+    
+    if (error) {
+      console.error("發案失敗:", error);
+      showToast("發案失敗，請稍後再試", "warn");
+      return null;
+    }
+
+    // 更新本地 React State 讓畫面立刻改變，不用等重新整理
+    setCases([...cases, newCase]);
+    showToast("案件已送出，地政士將開始回覆");
+    return newCase.id;
+  };
+
+const agentReply = async (caseId, agentId, text) => {
+    if (detectContact(text)) {
+      showToast("偵測到可能包含聯繫方式，請勿在留言中交換電話或Line，以免遭不法業者或詐騙集團利用", "warn");
+      return false;
+    }
+    const agent = agents.find((a) => a.id === agentId);
+    const hasUnlimited = agent?.unlimitedUntil && agent.unlimitedUntil > Date.now();
+    
+    if (!agent || (!hasUnlimited && agent.points <= 0)) {
+      showToast("點數不足，請先購買點數");
+      return false;
+    }
+
+    const target = cases.find((c) => c.id === caseId);
+    if (!target) return false;
+
+    const thread = target.threads[agentId] || { messages: [], hasFirstReply: false, banned: false };
+    if (thread.banned) {
+      showToast("此對話已被限制，請先提出申請解除");
+      return false;
+    }
+
+    // 準備要更新的對話資料
+    const newThread = {
+      ...thread,
+      hasFirstReply: true,
+      messages: [...thread.messages, { from: "agent", text, ts: Date.now() }],
+    };
+    
+    const nextThreads = { ...target.threads, [agentId]: newThread };
+    const nextPoints = hasUnlimited ? agent.points : agent.points - 1;
+
+    // --- Supabase 更新邏輯 (同時更新 cases 和 agents 表) ---
+    const { error: caseError } = await supabase
+      .from('cases')
+      .update({ threads: nextThreads })
+      .eq('id', caseId);
+
+    const { error: agentError } = await supabase
+      .from('agents')
+      .update({ points: nextPoints })
+      .eq('id', agentId);
+
+    if (caseError || agentError) {
+      console.error("回覆失敗", caseError, agentError);
+      showToast("回覆失敗，請檢查網路連線", "warn");
+      return false;
+    }
+
+    // 成功後更新畫面
+    const nextCases = cases.map((c) => c.id === caseId ? { ...c, threads: nextThreads } : c);
+    const nextAgents = agents.map((a) => a.id === agentId ? { ...a, points: nextPoints } : a);
+    
+    setCases(nextCases);
+    setAgents(nextAgents);
+    showToast("已回覆，扣除 1 點");
+    return true;
+  };
 
 /* ============================================================
    桓宸 HUAN CHEN — 地政士查找與案件媒合平台（互動原型 v2）
