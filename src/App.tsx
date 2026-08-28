@@ -565,7 +565,7 @@ function TopBar({ setView }) {
           </div>
         </button>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
-          <button onClick={() => setView({ name: "home" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${INK}`, background: "transparent", color: INK, whiteSpace: "nowrap" }}>找地政士</button>
+          <button onClick={() => setView({ name: "post-case" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SEAL}`, background: SEAL, color: PAPER, whiteSpace: "nowrap" }}>民眾免費發出案件需求找地政士</button>
           <button onClick={() => setView({ name: "my-cases" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${GOOD}`, background: "transparent", color: GOOD, whiteSpace: "nowrap" }}>查詢我的案件</button>
           <button onClick={() => setView({ name: "agent-console" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SURVEY}`, background: "transparent", color: SURVEY, whiteSpace: "nowrap" }}>地政士後台</button>
           <button onClick={() => setView({ name: "join" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SEAL}`, background: SEAL, color: PAPER, whiteSpace: "nowrap" }}>地政士免費註冊送點數</button>
@@ -601,11 +601,6 @@ function HomeView({ agents, cases, setView, onMount }) {
         </p>
         <div style={{ fontSize: 13, color: GOOD, background: "#EFF3ED", display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 99, marginBottom: 28 }}>
           <Coins size={14} /> 地政士免費登錄，立即贈送點數作為回覆額度
-        </div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-          <button onClick={() => setView({ name: "post-case" })} style={{ padding: "13px 22px", borderRadius: 3, fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none", background: SEAL, color: PAPER }}>
-            民眾免費發出案件需求
-          </button>
         </div>
       </section>
 
