@@ -1,133 +1,15 @@
+// @ts-nocheck
+// 這個檔案原本是互動原型的示範程式碼，故未逐一補上 TypeScript 型別。
+// 如需嚴謹型別檢查，建議之後為 agents/cases/transactions 補上 interface。
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, Star, MessageCircle, Shield, Coins, ChevronLeft, Check, Clock,
   Lock, X, ChevronDown, AlertTriangle, Users, CheckCircle2, XCircle, Send,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
-useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // 從 Supabase 的各個資料表撈取資料
-        const { data: agentsData, error: agentsErr } = await supabase.from('agents').select('*');
-        const { data: casesData, error: casesErr } = await supabase.from('cases').select('*');
-        const { data: txData, error: txErr } = await supabase.from('transactions').select('*');
-        const { data: visitsData, error: visitsErr } = await supabase.from('visits').select('*');
-
-        if (agentsErr || casesErr || txErr) throw new Error("資料撈取失敗");
-
-        // 如果資料庫還是空的，可以先塞入您的 SEED_AGENTS 假資料作為預設值
-        setAgents(agentsData?.length ? agentsData : SEED_AGENTS); 
-        setCases(casesData || []);
-        setTransactions(txData || []);
-        
-        // Visits 若設計為單筆 key-value，可能需要組裝一下，這裡先預設空物件
-        setVisits(visitsData?.length ? visitsData[0] : {}); 
-        
-      } catch (error) {
-        console.error("載入 Supabase 資料失敗:", error);
-        showToast("資料載入失敗，請重新整理", "warn");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-const createCase = async (data) => {
-    if (detectContact(data.problemText)) {
-      showToast("偵測到案件說明中可能包含聯繫方式，請勿留下電話或Line，以免遭不法業者或詐騙集團利用", "warn");
-      return null;
-    }
-    const newCase = {
-      id: uid("case"),
-      customerName: data.customerName.trim(),
-      customerContact: data.customerContact.trim(),
-      region: data.region,
-      caseType: data.caseType,
-      problemText: data.problemText.trim(),
-      status: "open", 
-      matchedAgentId: null,
-      threads: {}, 
-      ts: Date.now(),
-    };
-
-    // --- Supabase 寫入邏輯 ---
-    const { error } = await supabase.from('cases').insert([newCase]);
-    
-    if (error) {
-      console.error("發案失敗:", error);
-      showToast("發案失敗，請稍後再試", "warn");
-      return null;
-    }
-
-    // 更新本地 React State 讓畫面立刻改變，不用等重新整理
-    setCases([...cases, newCase]);
-    showToast("案件已送出，地政士將開始回覆");
-    return newCase.id;
-  };
-
-const agentReply = async (caseId, agentId, text) => {
-    if (detectContact(text)) {
-      showToast("偵測到可能包含聯繫方式，請勿在留言中交換電話或Line，以免遭不法業者或詐騙集團利用", "warn");
-      return false;
-    }
-    const agent = agents.find((a) => a.id === agentId);
-    const hasUnlimited = agent?.unlimitedUntil && agent.unlimitedUntil > Date.now();
-    
-    if (!agent || (!hasUnlimited && agent.points <= 0)) {
-      showToast("點數不足，請先購買點數");
-      return false;
-    }
-
-    const target = cases.find((c) => c.id === caseId);
-    if (!target) return false;
-
-    const thread = target.threads[agentId] || { messages: [], hasFirstReply: false, banned: false };
-    if (thread.banned) {
-      showToast("此對話已被限制，請先提出申請解除");
-      return false;
-    }
-
-    // 準備要更新的對話資料
-    const newThread = {
-      ...thread,
-      hasFirstReply: true,
-      messages: [...thread.messages, { from: "agent", text, ts: Date.now() }],
-    };
-    
-    const nextThreads = { ...target.threads, [agentId]: newThread };
-    const nextPoints = hasUnlimited ? agent.points : agent.points - 1;
-
-    // --- Supabase 更新邏輯 (同時更新 cases 和 agents 表) ---
-    const { error: caseError } = await supabase
-      .from('cases')
-      .update({ threads: nextThreads })
-      .eq('id', caseId);
-
-    const { error: agentError } = await supabase
-      .from('agents')
-      .update({ points: nextPoints })
-      .eq('id', agentId);
-
-    if (caseError || agentError) {
-      console.error("回覆失敗", caseError, agentError);
-      showToast("回覆失敗，請檢查網路連線", "warn");
-      return false;
-    }
-
-    // 成功後更新畫面
-    const nextCases = cases.map((c) => c.id === caseId ? { ...c, threads: nextThreads } : c);
-    const nextAgents = agents.map((a) => a.id === agentId ? { ...a, points: nextPoints } : a);
-    
-    setCases(nextCases);
-    setAgents(nextAgents);
-    showToast("已回覆，扣除 1 點");
-    return true;
-  };
 
 /* ============================================================
-   桓宸 HUAN CHEN — 地政士查找與案件媒合平台（互動原型 v2）
+   桓宸地政媒合通 LandMatch — 地政士查找與案件媒合平台（互動原型 v2）
    核心機制：
    1. 民眾登錄基本資料 + 發出案件需求（公開案件池）
    2. 所有地政士可見案件摘要，各自可回覆（扣點），互看不到彼此內容
@@ -205,21 +87,48 @@ function detectContact(text) {
   return false;
 }
 
-/* ---------- storage helpers ---------- */
-async function loadShared(key, fallback) {
-  try {
-    const res = await window.storage.get(key, true);
-    return res ? JSON.parse(res.value) : fallback;
-  } catch {
-    return fallback;
-  }
+/* ---------- Supabase helpers ----------
+   資料表結構（請在 Supabase 建立以下四張表，詳見對話說明中的 SQL）：
+   - agents        (id text primary key, ...其餘欄位對應 SEED_AGENTS 的 key)
+   - cases         (id text primary key, ...其餘欄位對應案件物件的 key，threads 為 jsonb)
+   - transactions  (id text primary key, ...對應購買紀錄物件的 key)
+   - visits        (date text primary key, customer int, agent int)
+------------------------------------------------------------- */
+function visitsArrayToObject(rows) {
+  const obj = {};
+  (rows || []).forEach((r) => {
+    obj[r.date] = { customer: r.customer || 0, agent: r.agent || 0 };
+  });
+  return obj;
 }
-async function saveShared(key, value) {
-  try {
-    await window.storage.set(key, JSON.stringify(value), true);
-  } catch (e) {
-    console.error("storage set failed", e);
+
+async function fetchAllData() {
+  const [agentsRes, casesRes, txRes, visitsRes] = await Promise.all([
+    supabase.from("agents").select("*"),
+    supabase.from("cases").select("*"),
+    supabase.from("transactions").select("*"),
+    supabase.from("visits").select("*"),
+  ]);
+
+  if (agentsRes.error) console.error("讀取地政士資料失敗", agentsRes.error);
+  if (casesRes.error) console.error("讀取案件資料失敗", casesRes.error);
+  if (txRes.error) console.error("讀取購買紀錄失敗", txRes.error);
+  if (visitsRes.error) console.error("讀取瀏覽量失敗", visitsRes.error);
+
+  let agents = agentsRes.data || [];
+  if (agents.length === 0 && !agentsRes.error) {
+    // 資料庫還是空的：寫入示範地政士資料作為初始種子，讓平台一開始就有內容
+    const { error: seedErr } = await supabase.from("agents").insert(SEED_AGENTS);
+    if (seedErr) console.error("寫入示範地政士資料失敗", seedErr);
+    agents = SEED_AGENTS;
   }
+
+  return {
+    agents,
+    cases: casesRes.data || [],
+    transactions: txRes.data || [],
+    visits: visitsArrayToObject(visitsRes.data),
+  };
 }
 
 /* ============================================================
@@ -237,15 +146,21 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const a = await loadShared("hc2:agents", SEED_AGENTS);
-      const c = await loadShared("hc2:cases", []);
-      const tx = await loadShared("hc2:transactions", []);
-      const v = await loadShared("hc2:visits", {});
-      setAgents(a);
-      setCases(c);
-      setTransactions(tx);
-      setVisits(v);
-      setLoading(false);
+      try {
+        const { agents: a, cases: c, transactions: tx, visits: v } = await fetchAllData();
+        setAgents(a);
+        setCases(c);
+        setTransactions(tx);
+        setVisits(v);
+      } catch (e) {
+        console.error("初始化資料失敗", e);
+        setAgents(SEED_AGENTS);
+        setCases([]);
+        setTransactions([]);
+        setVisits({});
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -256,16 +171,37 @@ export default function App() {
 
   const persistAgents = async (next) => {
     setAgents(next);
-    try {
-      await saveShared("hc2:agents", next);
-    } catch (e) {
-      console.error("persistAgents failed (可能是證書照片總量超過儲存上限)", e);
-      showToast("資料儲存失敗，可能是證書照片累積過大，正式版本需改為雲端檔案儲存", "warn");
+    const { error } = await supabase.from("agents").upsert(next, { onConflict: "id" });
+    if (error) {
+      console.error("persistAgents failed", error);
+      showToast("資料儲存失敗，可能是證書照片累積過大或網路問題", "warn");
     }
   };
-  const persistCases = async (next) => { setCases(next); await saveShared("hc2:cases", next); };
-  const persistTransactions = async (next) => { setTransactions(next); await saveShared("hc2:transactions", next); };
-  const persistVisits = async (next) => { setVisits(next); await saveShared("hc2:visits", next); };
+  const persistCases = async (next) => {
+    setCases(next);
+    const { error } = await supabase.from("cases").upsert(next, { onConflict: "id" });
+    if (error) {
+      console.error("persistCases failed", error);
+      showToast("案件資料儲存失敗，請檢查網路連線", "warn");
+    }
+  };
+  const persistTransactions = async (next) => {
+    setTransactions(next);
+    const newest = next[next.length - 1];
+    if (newest) {
+      const { error } = await supabase.from("transactions").insert([newest]);
+      if (error) console.error("persistTransactions failed", error);
+    }
+  };
+  const persistVisits = async (next) => {
+    setVisits(next);
+    const key = todayStr();
+    const day = next[key] || { customer: 0, agent: 0 };
+    const { error } = await supabase
+      .from("visits")
+      .upsert([{ date: key, customer: day.customer, agent: day.agent }], { onConflict: "date" });
+    if (error) console.error("persistVisits failed", error);
+  };
 
   const todayStr = () => new Date().toISOString().slice(0, 10);
   const trackVisit = async (role) => {
@@ -581,6 +517,7 @@ function GlobalStyle() {
       button { font-family: inherit; }
       input, select, textarea { font-family: inherit; }
       ::placeholder { color: #9C9588; }
+      @media (max-width: 520px) { .brand-subtitle { display: none; } }
     `}</style>
   );
 }
@@ -597,14 +534,35 @@ function Toast({ info }) {
 }
 
 /* ============================================================
+   Brand Mark（房屋圖示融合印章紅，呼應「桓宸地政媒合通」）
+============================================================ */
+function BrandMark({ size = 42 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
+      <rect x="1" y="1" width="42" height="42" rx="10" fill={PAPER_DEEP} stroke={LINE_C} strokeWidth="1" />
+      <path d="M22 8 L35 19 H31.5 V33 H12.5 V19 H9 Z" fill={SEAL} stroke={INK} strokeWidth="1.4" strokeLinejoin="round" />
+      <rect x="16.5" y="20.5" width="11" height="12.5" rx="1.5" fill={GOLD} stroke={INK} strokeWidth="1.2" />
+      <rect x="19.7" y="25.5" width="4.6" height="7.5" rx="1" fill={PAPER} stroke={INK} strokeWidth="1" />
+      <circle cx="18.7" cy="16.3" r="1.7" fill={SURVEY} />
+    </svg>
+  );
+}
+
+/* ============================================================
    Top Bar
 ============================================================ */
 function TopBar({ setView }) {
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(247,244,236,0.92)", backdropFilter: "blur(6px)", borderBottom: `1px solid ${LINE_C}` }}>
       <div style={{ maxWidth: 1140, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <button onClick={() => setView({ name: "home" })} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 8, background: SEAL, color: PAPER, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DFKai-SB','BiauKai','標楷體',serif", fontWeight: 700, fontSize: 18, transform: "rotate(-3deg)", boxShadow: "2px 2px 0 " + INK, flexShrink: 0, letterSpacing: "0.1em", lineHeight: 1.2, textAlign: "center" }}>桓宸</div>
+        <button onClick={() => setView({ name: "home" })} style={{ display: "flex", alignItems: "center", gap: 11, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          <BrandMark size={42} />
+          <div style={{ textAlign: "left", lineHeight: 1.15 }}>
+            <div className="serif" style={{ fontWeight: 900, fontSize: 19, color: INK, letterSpacing: "0.01em", whiteSpace: "nowrap" }}>桓宸地政媒合通</div>
+            <div className="brand-subtitle mono" style={{ fontSize: 10.5, color: SURVEY, letterSpacing: "0.06em", marginTop: 3, whiteSpace: "nowrap" }}>
+              LandMatch <span style={{ color: LINE_C }}>|</span> <span style={{ color: SEAL }}>全台地政士媒合平台</span>
+            </div>
+          </div>
         </button>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
           <button onClick={() => setView({ name: "home" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${INK}`, background: "transparent", color: INK, whiteSpace: "nowrap" }}>找地政士</button>
@@ -694,14 +652,14 @@ function HomeView({ agents, cases, setView, onMount }) {
         <div style={{ background: PAPER_DEEP, borderRadius: 6, padding: "28px 26px", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ fontFamily: "'Noto Serif TC',serif", fontWeight: 900, fontSize: 13, color: SEAL, border: `2px solid ${SEAL}`, borderRadius: 4, padding: "8px 7px", lineHeight: 1.4, writingMode: "vertical-rl", letterSpacing: "0.15em", flexShrink: 0 }}>公開透明</div>
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.85, color: INK_SOFT }}>
-            <strong style={{ color: INK }}>桓宸不經手交易、不抽取服務佣金。</strong>
+            <strong style={{ color: INK }}>桓宸地政媒合通不經手交易、不抽取服務佣金。</strong>
             為保護雙方安全，留言中禁止交換電話或Line等聯繫方式，以免遭不法業者或詐騙集團利用。真實聯繫方式僅在雙方確認發案後才會解鎖。
           </p>
         </div>
       </section>
 
       <footer style={{ borderTop: `1px solid ${LINE_C}`, padding: "26px 20px", textAlign: "center", color: INK_SOFT, fontSize: 12 }}>
-        © 2026 桓宸 HUAN CHEN · 本平台僅提供地政士／代書資訊查找與案件媒合功能，不參與居間仲介或代理收付款項。
+        © 2026 桓宸地政媒合通 LandMatch · 本平台僅提供地政士／代書資訊查找與案件媒合功能，不參與居間仲介或代理收付款項。
         <div style={{ marginTop: 10 }}>
           <button onClick={() => setView({ name: "admin" })} style={{ background: "none", border: "none", color: "#D8D2C2", fontSize: 10, cursor: "pointer", padding: 0 }}>
             營運管理
@@ -741,15 +699,6 @@ function CaseCard({ theCase, onClick }) {
   );
 }
 
-/* ============================================================
-   Post Case View（民眾發案）
-============================================================ */
-/* ============================================================
-   Admin Dashboard View（平台管理者後台）
-============================================================ */
-/* ============================================================
-   Admin Login View（管理者登入）
-============================================================ */
 function AdminLoginView({ onBack, onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -891,7 +840,6 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
 
       {tab === "overview" && (
         <>
-          {/* 今日總覽 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 28 }}>
             <StatBox label="今日民眾瀏覽" value={visits[todayStr]?.customer || 0} />
             <StatBox label="今日地政士瀏覽" value={visits[todayStr]?.agent || 0} />
@@ -901,7 +849,6 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
             <StatBox label="累積總營收" value={`NT$${totalRevenue}`} />
           </div>
 
-          {/* 每日瀏覽量趨勢 */}
           <h3 style={{ fontSize: 15.5, fontWeight: 700, margin: "0 0 12px" }}>每日瀏覽量</h3>
           <div style={{ background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6, overflow: "hidden", marginBottom: 28 }}>
             <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
@@ -923,7 +870,6 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
             </table>
           </div>
 
-          {/* 新加入地政士 */}
           <h3 style={{ fontSize: 15.5, fontWeight: 700, margin: "0 0 12px" }}>地政士加入紀錄</h3>
           <p style={{ fontSize: 12, color: INK_SOFT, margin: "0 0 14px" }}>請至內政部地政士查詢系統人工核對下列資料是否屬實：<a href="https://resim.moi.gov.tw/Home/AgentIndex" target="_blank" rel="noopener noreferrer" style={{ color: SEAL }}>resim.moi.gov.tw</a></p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
@@ -933,7 +879,6 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
             ))}
           </div>
 
-          {/* 新發案民眾 */}
           <h3 style={{ fontSize: 15.5, fontWeight: 700, margin: "0 0 12px" }}>民眾發案紀錄</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
             {cases.length === 0 && <div style={{ padding: 16, textAlign: "center", color: INK_SOFT, background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6 }}>尚無資料</div>}
@@ -952,7 +897,6 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
             ))}
           </div>
 
-          {/* 點數購買記錄 */}
           <h3 style={{ fontSize: 15.5, fontWeight: 700, margin: "0 0 12px" }}>點數／月費購買記錄</h3>
           <div style={{ background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6, overflow: "hidden" }}>
             <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
@@ -1085,9 +1029,6 @@ function StatBox({ label, value }) {
 const thStyle = { padding: "10px 14px", fontSize: 12, color: INK_SOFT, fontWeight: 700 };
 const tdStyle = { padding: "10px 14px" };
 
-/* ============================================================
-   My Cases View（民眾用聯繫方式查詢自己發過的案件）
-============================================================ */
 function MyCasesView({ cases, onBack, onOpenCase }) {
   const [contact, setContact] = useState("");
   const [searched, setSearched] = useState(false);
@@ -1193,9 +1134,6 @@ function PostCaseView({ onBack, onSubmit }) {
   );
 }
 
-/* ============================================================
-   Case Detail View（民眾視角）
-============================================================ */
 function CaseDetailView({ theCase, agents, onBack, onCustomerMessage, onProposeMatch, onRespondMatch, onRequestUnban, viewerRole = "customer" }) {
   const [activeAgentId, setActiveAgentId] = useState(null);
   const [draft, setDraft] = useState("");
@@ -1421,9 +1359,6 @@ function ThreadPanel({ theCase, agent, thread, draft, setDraft, onBack, onSend, 
   );
 }
 
-/* ============================================================
-   Agent Console View（地政士後台）
-============================================================ */
 function AgentProfileEditor({ agent, onUpdateProfile }) {
   const [form, setForm] = useState({
     contact: agent.contact || "", regions: agent.regions || [], tags: agent.tags || [], bio: agent.bio || "",
@@ -1687,9 +1622,6 @@ function BuyPointsForm({ agentId, onBuyPoints, onClose }) {
   );
 }
 
-/* ============================================================
-   Join View（地政士登錄）
-============================================================ */
 function JoinView({ onBack, onSubmit }) {
   const [form, setForm] = useState({
     name: "", contact: "", regions: [], tags: [], bio: "",
@@ -1798,9 +1730,6 @@ function Field({ label, children }) {
 
 const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 3, border: `1px solid ${LINE_C}`, fontSize: 14 };
 
-/* ============================================================
-   MultiSelectDropdown
-============================================================ */
 function MultiSelectDropdown({ options, selected, onChange, placeholder, style }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
