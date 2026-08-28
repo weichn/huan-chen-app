@@ -602,12 +602,9 @@ function HomeView({ agents, cases, setView, onMount }) {
         <div style={{ fontSize: 13, color: GOOD, background: "#EFF3ED", display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 99, marginBottom: 28 }}>
           <Coins size={14} /> 地政士免費登錄，立即贈送點數作為回覆額度
         </div>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
           <button onClick={() => setView({ name: "post-case" })} style={{ padding: "13px 22px", borderRadius: 3, fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none", background: SEAL, color: PAPER }}>
-            免費發出我的案件需求
-          </button>
-          <button onClick={() => setView({ name: "join" })} style={{ padding: "13px 22px", borderRadius: 3, fontSize: 15, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${INK}`, background: "transparent", color: INK }}>
-            地政士免費登錄資料
+            民眾免費發出案件需求
           </button>
         </div>
       </section>
