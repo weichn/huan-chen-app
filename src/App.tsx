@@ -435,6 +435,18 @@ export default function App() {
     showToast(a.verified ? `已將 ${a.name} 標記為已查核` : `已取消 ${a.name} 的查核標記`);
   };
 
+  const deleteAgent = async (agentId) => {
+    const target = agents.find((a) => a.id === agentId);
+    const { error } = await supabase.from("agents").delete().eq("id", agentId);
+    if (error) {
+      console.error("deleteAgent failed", error);
+      showToast("刪除失敗，請檢查網路連線", "warn");
+      return;
+    }
+    setAgents(agents.filter((a) => a.id !== agentId));
+    showToast(`已刪除 ${target?.name || "該地政士"} 的資料`, "warn");
+  };
+
   const updateAgentProfile = async (agentId, updates) => {
     const before = agents.find((a) => a.id === agentId);
     const significantFieldsChanged = before && (
@@ -472,6 +484,7 @@ export default function App() {
             onUnban={adminUnbanThread}
             onLogout={() => { setAdminAuthed(false); setView({ name: "home" }); }}
             onToggleVerified={toggleVerified}
+            onDeleteAgent={deleteAgent}
           />
         ) : (
           <AdminLoginView
@@ -829,22 +842,46 @@ function AdminLoginView({ onBack, onLogin }) {
   );
 }
 
-function AgentVerifyCard({ agent: a, onToggleVerified }) {
+function AgentVerifyCard({ agent: a, onToggleVerified, onDeleteAgent }) {
   const [showPhoto, setShowPhoto] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
     <div style={{ background: "#fff", border: `1.5px solid ${a.verified ? GOOD : LINE_C}`, borderRadius: 6, padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
         <div>
           <strong style={{ fontSize: 14 }}>{a.name} 地政士</strong>
           <span style={{ fontSize: 12.5, color: INK_SOFT, marginLeft: 8 }}>{a.contact || "（未填寫）"}</span>
+          {a.email && <span style={{ fontSize: 11.5, color: "#B8AF96", marginLeft: 8 }}>· {a.email}</span>}
         </div>
-        <button
-          onClick={() => onToggleVerified(a.id)}
-          style={{ fontSize: 10.5, color: a.verified ? GOOD : WARN, border: `1px solid ${a.verified ? GOOD : WARN}`, borderRadius: 99, padding: "5px 12px", background: "none", cursor: "pointer", fontWeight: 700 }}
-        >
-          {a.verified ? "✓ 已查核（點此取消）" : "標記為已查核"}
-        </button>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button
+            onClick={() => onToggleVerified(a.id)}
+            style={{ fontSize: 10.5, color: a.verified ? GOOD : WARN, border: `1px solid ${a.verified ? GOOD : WARN}`, borderRadius: 99, padding: "5px 12px", background: "none", cursor: "pointer", fontWeight: 700 }}
+          >
+            {a.verified ? "✓ 已查核（點此取消）" : "標記為已查核"}
+          </button>
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            style={{ fontSize: 10.5, color: SEAL, border: `1px solid ${SEAL}`, borderRadius: 99, padding: "5px 12px", background: "none", cursor: "pointer", fontWeight: 700 }}
+          >
+            刪除此地政士
+          </button>
+        </div>
       </div>
+
+      {confirmingDelete && (
+        <div style={{ background: "#FCEDEB", border: `1px solid ${SEAL}`, borderRadius: 4, padding: "10px 12px", marginBottom: 10, fontSize: 12.5, color: SEAL, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, minWidth: 160 }}>確定要刪除 {a.name} 地政士嗎？此動作無法復原，會移除其個人資料與回覆紀錄，但不會刪除他的登入帳號本身。</span>
+          <button onClick={() => { onDeleteAgent(a.id); setConfirmingDelete(false); }} style={{ padding: "5px 12px", borderRadius: 3, border: "none", background: SEAL, color: PAPER, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+            確定刪除
+          </button>
+          <button onClick={() => setConfirmingDelete(false)} style={{ padding: "5px 12px", borderRadius: 3, border: `1px solid ${LINE_C}`, background: "#fff", color: INK_SOFT, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+            取消
+          </button>
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 4, fontSize: 12.5, marginBottom: 10 }}>
         <InfoRow label="執照字號" value={a.licenseNo} />
         <InfoRow label="證書字號" value={a.certNo} />
@@ -879,7 +916,7 @@ function AgentVerifyCard({ agent: a, onToggleVerified }) {
   );
 }
 
-function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDeleteMessage, onForceBan, onUnban, onLogout, onToggleVerified }) {
+function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDeleteMessage, onForceBan, onUnban, onLogout, onToggleVerified, onDeleteAgent }) {
   const [tab, setTab] = useState("overview"); // overview | messages
   const todayStr = new Date().toISOString().slice(0, 10);
   const dayKeys = Object.keys(visits).sort().reverse();
@@ -967,7 +1004,7 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
             {agents.length === 0 && <div style={{ padding: 16, textAlign: "center", color: INK_SOFT, background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6 }}>尚無資料</div>}
             {[...agents].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0)).map((a) => (
-              <AgentVerifyCard key={a.id} agent={a} onToggleVerified={onToggleVerified} />
+              <AgentVerifyCard key={a.id} agent={a} onToggleVerified={onToggleVerified} onDeleteAgent={onDeleteAgent} />
             ))}
           </div>
 
