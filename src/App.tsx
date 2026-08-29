@@ -32,8 +32,12 @@ const GOOD = "#5B7355";
 const WARN = "#B8862E";
 
 const SERVICE_TAGS = [
-  "所有權移轉過戶", "繼承登記", "銀行抵押權設定",
-  "民間抵押權設定", "土地分割／合併", "實價登錄申報",
+  "所有權移轉登記（買賣過戶）", "所有權移轉登記（贈與）", "繼承登記",
+  "建物第一次登記（保存登記）", "銀行抵押權設定", "民間抵押權設定",
+  "抵押權塗銷登記", "地上權登記", "土地分割登記", "土地合併登記",
+  "建物分割／合併登記", "更正登記", "信託登記／塗銷", "預告登記",
+  "實價登錄申報", "不動產買賣契約撰擬", "農地移轉登記",
+  "產權調查／謄本代辦", "拍賣過戶點交協助", "都市更新／危老重建諮詢",
 ];
 
 const TAIWAN_REGIONS = [
@@ -44,9 +48,9 @@ const TAIWAN_REGIONS = [
 ];
 
 const SEED_AGENTS = [
-  { id: "agent-001", name: "林○○", contact: "0912-345-678（示範）", regions: ["桃園市", "新北市"], tags: ["繼承登記", "所有權移轉過戶"], verified: true, points: 6, bio: "執業15年，專長繼承登記與不動產過戶，案件量大但回覆迅速。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範地政士事務所", firmAddress: "桃園市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
+  { id: "agent-001", name: "林○○", contact: "0912-345-678（示範）", regions: ["桃園市", "新北市"], tags: ["繼承登記", "所有權移轉登記（買賣過戶）"], verified: true, points: 6, bio: "執業15年，專長繼承登記與不動產過戶，案件量大但回覆迅速。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範地政士事務所", firmAddress: "桃園市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
   { id: "agent-002", name: "陳○○", contact: "0923-456-789（示範）", regions: ["新北市"], tags: ["銀行抵押權設定", "民間抵押權設定"], verified: true, points: 1, bio: "專辦各類抵押權設定與塗銷，與多家銀行配合流程熟悉。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範代書事務所", firmAddress: "新北市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
-  { id: "agent-003", name: "黃○○", contact: "0934-567-890（示範）", regions: ["台中市"], tags: ["土地分割／合併", "實價登錄申報"], verified: true, points: 9, bio: "土地測量與分割合併案件經驗豐富，亦提供實價登錄申報諮詢。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範土地登記事務所", firmAddress: "台中市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
+  { id: "agent-003", name: "黃○○", contact: "0934-567-890（示範）", regions: ["台中市"], tags: ["土地分割登記", "實價登錄申報"], verified: true, points: 9, bio: "土地測量與分割合併案件經驗豐富，亦提供實價登錄申報諮詢。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範土地登記事務所", firmAddress: "台中市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
 ];
 
 function uid(p = "id") { return `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
@@ -2004,6 +2008,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, style }
       </button>
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 4, boxShadow: "0 14px 30px -10px rgba(31,36,32,0.25)", maxHeight: 260, overflowY: "auto" }}>
+          <button type="button" onClick={() => onChange(options)} style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12.5, color: GOOD, background: "none", border: "none", borderBottom: `1px solid ${PAPER_DEEP}`, cursor: "pointer" }}>全選</button>
           {selected.length > 0 && (
             <button type="button" onClick={() => onChange([])} style={{ width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12.5, color: SEAL, background: "none", border: "none", borderBottom: `1px solid ${PAPER_DEEP}`, cursor: "pointer" }}>清空選擇</button>
           )}
