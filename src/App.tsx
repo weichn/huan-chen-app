@@ -1654,20 +1654,16 @@ function AgentConsoleView({ agents, cases, authUser, onBack, onLogout, onAgentRe
                     const otherRepliers = Object.entries(c.threads || {}).filter(([id, t]) => id !== selectedAgentId && t.hasFirstReply).length;
                     const isPendingMe = c.status === "pending_match" && c.matchedAgentId === selectedAgentId;
                     return (
-                      <div key={c.id} onClick={() => setActiveCaseId(c.id)} style={{ background: "#fff", border: `1px solid ${isPendingMe ? WARN : LINE_C}`, borderRadius: 5, padding: 16, cursor: "pointer" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 14 }}>{maskName(c.customerName)}</div>
-                            <div style={{ fontSize: 12, color: INK_SOFT }}>{c.region} · {c.caseType}</div>
-                          </div>
-                          {isPendingMe && <span style={{ fontSize: 11, color: WARN, border: `1px solid ${WARN}`, borderRadius: 99, padding: "3px 8px" }}>待您確認接案</span>}
-                        </div>
-                        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 10px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.problemText}</p>
-                        <div style={{ fontSize: 11.5, color: "#B8AF96", display: "flex", gap: 12 }}>
-                          {myThread?.hasFirstReply ? <span style={{ color: SEAL }}>您已回覆</span> : <span>尚未回覆</span>}
-                          {otherRepliers > 0 && <span>另有 {otherRepliers} 位地政士回覆中</span>}
-                        </div>
-                      </div>
+                      <CasePoolCard
+                        key={c.id}
+                        theCase={c}
+                        myThread={myThread}
+                        otherRepliers={otherRepliers}
+                        isPendingMe={isPendingMe}
+                        agentId={agent.id}
+                        onOpenCase={() => setActiveCaseId(c.id)}
+                        onAgentReply={onAgentReply}
+                      />
                     );
                   })}
                 </div>
@@ -1696,6 +1692,59 @@ function AgentConsoleView({ agents, cases, authUser, onBack, onLogout, onAgentRe
         </>
       )}
     </main>
+  );
+}
+
+function CasePoolCard({ theCase: c, myThread, otherRepliers, isPendingMe, agentId, onOpenCase, onAgentReply }) {
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const alreadyReplied = !!myThread?.hasFirstReply;
+  const isBanned = !!myThread?.banned;
+
+  const send = async () => {
+    if (!draft.trim() || sending) return;
+    setSending(true);
+    const ok = await onAgentReply(c.id, agentId, draft.trim());
+    setSending(false);
+    if (ok) setDraft("");
+  };
+
+  return (
+    <div style={{ background: "#fff", border: `1px solid ${isPendingMe ? WARN : LINE_C}`, borderRadius: 5, padding: 16 }}>
+      <div onClick={onOpenCase} style={{ cursor: "pointer" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>{maskName(c.customerName)}</div>
+            <div style={{ fontSize: 12, color: INK_SOFT }}>{c.region} · {c.caseType}</div>
+          </div>
+          {isPendingMe && <span style={{ fontSize: 11, color: WARN, border: `1px solid ${WARN}`, borderRadius: 99, padding: "3px 8px" }}>待您確認接案</span>}
+        </div>
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 10px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.problemText}</p>
+        <div style={{ fontSize: 11.5, color: "#B8AF96", display: "flex", gap: 12, marginBottom: alreadyReplied || isBanned ? 0 : 10 }}>
+          {alreadyReplied ? <span style={{ color: SEAL }}>您已回覆（點此查看完整對話）</span> : <span>尚未回覆</span>}
+          {otherRepliers > 0 && <span>另有 {otherRepliers} 位地政士回覆中</span>}
+        </div>
+      </div>
+
+      {!alreadyReplied && !isBanned && (
+        <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8 }}>
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="直接在這裡輸入回覆內容（送出將扣除1點）。請勿留下電話或Line"
+            onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+            style={{ flex: 1, padding: "9px 12px", borderRadius: 3, border: `1px solid ${LINE_C}`, fontSize: 13 }}
+          />
+          <button
+            onClick={send}
+            disabled={!draft.trim() || sending}
+            style={{ padding: "9px 14px", borderRadius: 3, border: "none", background: draft.trim() ? SEAL : LINE_C, color: draft.trim() ? PAPER : "#9C9588", fontSize: 12.5, fontWeight: 700, cursor: draft.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}
+          >
+            <Send size={13} /> {sending ? "送出中…" : "回覆並扣點"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
