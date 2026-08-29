@@ -669,6 +669,73 @@ function HomeView({ agents, cases, setView, onMount }) {
       </section>
 
       <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
+        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>全台服務範圍</div>
+        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>全台縣市媒合狀態</h2>
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>
+          民眾可於全台免費發布需求；已有在地地政士的縣市可優先媒合，其餘縣市持續招募專業地政士加入。
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+          {TAIWAN_REGIONS.map((region) => {
+            const count = agents.filter((a) => (a.regions || []).includes(region)).length;
+            const hasAgent = count > 0;
+            return (
+              <div key={region} style={{ background: hasAgent ? "#EFF3ED" : PAPER, border: `1px solid ${hasAgent ? GOOD : LINE_C}`, borderRadius: 6, padding: "16px 18px" }}>
+                <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 8 }}>📍 {region}</div>
+                {hasAgent ? (
+                  <div style={{ fontSize: 12.5, color: GOOD, display: "flex", alignItems: "center", gap: 5 }}>
+                    <CheckCircle2 size={14} /> 已有 {count} 位地政士
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: WARN, display: "flex", alignItems: "center", gap: 5 }}>
+                    📣 招募在地地政士中
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {(() => {
+        const recommended = agents.filter((a) => a.verified).sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 3);
+        if (recommended.length === 0) return null;
+        return (
+          <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
+            <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>精選推薦</div>
+            <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px", display: "flex", alignItems: "center", gap: 8 }}>
+              <Star size={22} color={GOLD} fill={GOLD} /> 推薦地政士
+            </h2>
+            <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>
+              為保障雙方隱私，聯絡方式將於媒合成功後提供。以下星等與完成案件數為示範資料，正式上線後將改為真實媒合評價。
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+              {recommended.map((a) => (
+                <div key={a.id} style={{ background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6, padding: 20 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: GOOD, border: `1px solid ${GOOD}`, borderRadius: 99, padding: "3px 10px", marginBottom: 12 }}>
+                    <Shield size={11} /> 認證地政士
+                  </span>
+                  <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>{a.name} 地政士</div>
+                  <div style={{ fontSize: 12.5, color: INK_SOFT, marginBottom: 10 }}>📍 {(a.regions || []).join("、")}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 10 }}>
+                    {[0, 1, 2, 3, 4].map((i) => <Star key={i} size={15} color={GOLD} fill={GOLD} />)}
+                    <span style={{ fontSize: 12.5, color: INK_SOFT, marginLeft: 4 }}>5.0 分（示範）</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: INK_SOFT, marginBottom: 4 }}>專長：{(a.tags || []).join("、") || "—"}</div>
+                  <div style={{ fontSize: 12.5, color: INK_SOFT, marginBottom: 16 }}>完成案件：128 件（示範）</div>
+                  <button
+                    onClick={() => setView({ name: "post-case" })}
+                    style={{ width: "100%", padding: "10px 0", borderRadius: 3, border: "none", background: SEAL, color: PAPER, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                  >
+                    🤝 透過平台媒合
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
+
+      <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
         <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>運作方式</div>
         <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 24px" }}>公開發案，多位地政士主動回覆</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 1, background: LINE_C, border: `1px solid ${LINE_C}` }}>
