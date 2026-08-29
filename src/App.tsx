@@ -619,11 +619,11 @@ function TopBar({ setView }) {
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(247,244,236,0.92)", backdropFilter: "blur(6px)", borderBottom: `1px solid ${LINE_C}` }}>
       <div style={{ maxWidth: 1140, margin: "0 auto", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <button onClick={() => setView({ name: "home" })} style={{ display: "flex", alignItems: "center", gap: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          <BrandMark size={54} />
+        <button onClick={() => setView({ name: "home" })} style={{ display: "flex", alignItems: "center", gap: 16, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          <BrandMark size={68} />
           <div style={{ textAlign: "left", lineHeight: 1.15 }}>
-            <div className="serif" style={{ fontWeight: 900, fontSize: 25, color: INK, letterSpacing: "0.01em", whiteSpace: "nowrap" }}>桓宸地政媒合通</div>
-            <div className="brand-subtitle mono" style={{ fontSize: 12.5, color: SURVEY, letterSpacing: "0.06em", marginTop: 3, whiteSpace: "nowrap" }}>
+            <div className="serif" style={{ fontWeight: 900, fontSize: 32, color: INK, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>桓宸地政媒合通</div>
+            <div className="brand-subtitle mono" style={{ fontSize: 14, color: SURVEY, letterSpacing: "0.1em", marginTop: 4, whiteSpace: "nowrap" }}>
               LandMatch <span style={{ color: LINE_C }}>|</span> <span style={{ color: SEAL }}>全台地政士媒合平台</span>
             </div>
           </div>
