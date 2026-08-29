@@ -143,6 +143,17 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [adminAuthed, setAdminAuthed] = useState(false);
+  const [authUser, setAuthUser] = useState(null); // 目前登入的地政士（Supabase Auth 使用者）
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthUser(data.session?.user || null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user || null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -381,10 +392,40 @@ export default function App() {
   };
 
   const registerAgent = async (data) => {
-    const agent = { id: uid("agent"), points: 1, verified: false, banned: false, joinedAt: Date.now(), ...data };
+    const { email, password, ...profile } = data;
+    const { data: authData, error: authErr } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+    });
+    if (authErr) {
+      showToast(`註冊失敗：${authErr.message}`, "warn");
+      return null;
+    }
+    const userId = authData.user?.id || null;
+    const agent = { id: uid("agent"), points: 1, verified: false, banned: false, joinedAt: Date.now(), userId, email: email.trim(), ...profile };
     await persistAgents([...agents, agent]);
-    showToast("登錄成功！已贈送回覆點數");
+    if (authData.session) {
+      // 專案若關閉了「需驗證信箱」，這裡會直接拿到 session，可以馬上登入
+      setAuthUser(authData.user);
+      showToast("登錄成功！已贈送回覆點數");
+    } else {
+      showToast("登錄成功！請先至您的信箱完成驗證後再登入地政士後台");
+    }
     return agent.id;
+  };
+
+  const loginAgent = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) {
+      return error.message;
+    }
+    setAuthUser(data.user);
+    return null;
+  };
+
+  const logoutAgent = async () => {
+    await supabase.auth.signOut();
+    setAuthUser(null);
   };
 
   const toggleVerified = async (agentId) => {
@@ -477,25 +518,35 @@ export default function App() {
         />
       )}
       {view.name === "agent-console" && (
-        <AgentConsoleView
-          agents={agents}
-          cases={cases}
-          onBack={() => setView({ name: "home" })}
-          onAgentReply={agentReply}
-          onBanThread={banThread}
-          onRequestUnban={requestUnban}
-          onRespondMatch={respondMatch}
-          onBuyPoints={buyPoints}
-          onMount={() => trackVisit("agent")}
-          onUpdateProfile={updateAgentProfile}
-        />
+        authUser ? (
+          <AgentConsoleView
+            agents={agents}
+            cases={cases}
+            authUser={authUser}
+            onBack={() => setView({ name: "home" })}
+            onLogout={async () => { await logoutAgent(); setView({ name: "home" }); }}
+            onAgentReply={agentReply}
+            onBanThread={banThread}
+            onRequestUnban={requestUnban}
+            onRespondMatch={respondMatch}
+            onBuyPoints={buyPoints}
+            onMount={() => trackVisit("agent")}
+            onUpdateProfile={updateAgentProfile}
+          />
+        ) : (
+          <AgentAuthView
+            onBack={() => setView({ name: "home" })}
+            onLogin={loginAgent}
+            onGoRegister={() => setView({ name: "join" })}
+          />
+        )
       )}
       {view.name === "join" && (
         <JoinView
           onBack={() => setView({ name: "home" })}
           onSubmit={async (data) => {
             const id = await registerAgent(data);
-            setView({ name: "agent-console", focusAgentId: id });
+            if (id) setView({ name: "agent-console", focusAgentId: id });
           }}
         />
       )}
@@ -688,6 +739,55 @@ function CaseCard({ theCase, onClick }) {
         <span style={{ color: SEAL, fontWeight: 700 }}>查看詳情 →</span>
       </div>
     </div>
+  );
+}
+
+function AgentAuthView({ onBack, onLogin, onGoRegister }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!email.trim() || !password) return;
+    setError("");
+    setLoading(true);
+    const errMsg = await onLogin(email, password);
+    setLoading(false);
+    if (errMsg) setError("登入失敗：帳號、密碼錯誤，或尚未完成信箱驗證");
+  };
+
+  return (
+    <main style={{ maxWidth: 420, margin: "0 auto", padding: "60px 20px 80px" }}>
+      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: INK_SOFT, fontSize: 14, marginBottom: 24, padding: 0 }}>
+        <ChevronLeft size={16} /> 返回首頁
+      </button>
+
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <Lock size={28} color={SEAL} style={{ marginBottom: 10 }} />
+        <h1 className="serif" style={{ fontWeight: 900, fontSize: 20, margin: 0 }}>地政士登入</h1>
+        <p style={{ fontSize: 12.5, color: INK_SOFT, marginTop: 8 }}>登入後只會看到您自己的案件回覆與點數資料</p>
+      </div>
+
+      <div style={{ background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6, padding: 24 }}>
+        <Field label="註冊時使用的 Email">
+          <input value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} style={inputStyle} autoFocus />
+        </Field>
+        <Field label="密碼">
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} style={inputStyle} />
+        </Field>
+        {error && <div style={{ fontSize: 12.5, color: SEAL, marginBottom: 12 }}>{error}</div>}
+        <button onClick={submit} disabled={loading} style={{ width: "100%", padding: "11px 0", borderRadius: 3, border: "none", background: SEAL, color: PAPER, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+          {loading ? "登入中…" : "登入"}
+        </button>
+        <div style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: INK_SOFT }}>
+          還沒有帳號？
+          <button onClick={onGoRegister} style={{ background: "none", border: "none", color: SEAL, fontWeight: 700, cursor: "pointer", padding: 0, marginLeft: 4 }}>
+            免費登錄成為地政士
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }
 
@@ -1448,18 +1548,18 @@ function AgentProfileEditor({ agent, onUpdateProfile }) {
   );
 }
 
-function AgentConsoleView({ agents, cases, onBack, onAgentReply, onBanThread, onRequestUnban, onRespondMatch, onBuyPoints, onMount, onUpdateProfile }) {
+function AgentConsoleView({ agents, cases, authUser, onBack, onLogout, onAgentReply, onBanThread, onRequestUnban, onRespondMatch, onBuyPoints, onMount, onUpdateProfile }) {
   const mountedRef = useRef(false);
   useEffect(() => {
     if (!mountedRef.current) { mountedRef.current = true; onMount && onMount(); }
   }, []);
-  const [selectedAgentId, setSelectedAgentId] = useState(agents[0]?.id || null);
   const [activeCaseId, setActiveCaseId] = useState(null);
   const [draft, setDraft] = useState("");
   const [showBuy, setShowBuy] = useState(false);
   const [tab, setTab] = useState("cases"); // cases | profile
 
-  const agent = agents.find((a) => a.id === selectedAgentId);
+  const agent = agents.find((a) => a.userId === authUser?.id);
+  const selectedAgentId = agent?.id || null;
   const openCases = cases.filter((c) => c.status === "open" || (c.status === "pending_match" && c.matchedAgentId === selectedAgentId) || (c.status === "matched" && c.matchedAgentId === selectedAgentId));
 
   const activeCase = activeCaseId ? cases.find((c) => c.id === activeCaseId) : null;
@@ -1467,21 +1567,20 @@ function AgentConsoleView({ agents, cases, onBack, onAgentReply, onBanThread, on
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px 80px" }}>
-      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: INK_SOFT, fontSize: 14, marginBottom: 18, padding: 0 }}>
-        <ChevronLeft size={16} /> 返回首頁
-      </button>
-
-      <div style={{ background: PAPER_DEEP, border: `1px solid ${LINE_C}`, borderRadius: 5, padding: "10px 14px", fontSize: 12, color: INK_SOFT, marginBottom: 16 }}>
-        此頁為示範用地政士登入後台，可切換不同示範身分預覽流程。正式版本會有獨立帳號登入。
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", color: INK_SOFT, fontSize: 14, padding: 0 }}>
+          <ChevronLeft size={16} /> 返回首頁
+        </button>
+        <button onClick={onLogout} style={{ fontSize: 12.5, color: INK_SOFT, background: "none", border: `1px solid ${LINE_C}`, borderRadius: 99, padding: "5px 12px", cursor: "pointer" }}>
+          登出
+        </button>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-        {agents.map((a) => (
-          <button key={a.id} onClick={() => { setSelectedAgentId(a.id); setActiveCaseId(null); setTab("cases"); }} style={{ padding: "8px 14px", borderRadius: 99, fontSize: 13, cursor: "pointer", border: `1.5px solid ${selectedAgentId === a.id ? SEAL : LINE_C}`, background: selectedAgentId === a.id ? "#FBF0EE" : "#fff", color: selectedAgentId === a.id ? SEAL : INK_SOFT }}>
-            {a.name} 地政士
-          </button>
-        ))}
-      </div>
+      {!agent && (
+        <div style={{ padding: "40px 20px", textAlign: "center", color: INK_SOFT, fontSize: 13.5, background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6 }}>
+          找不到與此帳號對應的地政士資料，請確認您是用登錄時的帳號登入，或聯繫平台管理者協助排查。
+        </div>
+      )}
 
       {agent && (
         <>
@@ -1618,10 +1717,13 @@ function JoinView({ onBack, onSubmit }) {
   const [form, setForm] = useState({
     name: "", contact: "", regions: [], tags: [], bio: "",
     licenseNo: "", certNo: "", firmName: "", firmAddress: "", guildName: "", certPhoto: null,
+    email: "", password: "",
   });
   const [photoError, setPhotoError] = useState("");
+  const validEmail = /\S+@\S+\.\S+/.test(form.email.trim());
   const valid = form.name.trim() && form.contact.trim() && form.regions.length > 0 && form.tags.length > 0
-    && form.licenseNo.trim() && form.certNo.trim() && form.firmName.trim() && form.firmAddress.trim() && form.guildName.trim();
+    && form.licenseNo.trim() && form.certNo.trim() && form.firmName.trim() && form.firmAddress.trim() && form.guildName.trim()
+    && validEmail && form.password.length >= 6;
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -1652,6 +1754,12 @@ function JoinView({ onBack, onSubmit }) {
 
       <div style={{ background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6, padding: 24 }}>
         <Field label="姓名 / 稱呼"><input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="例如：王○○" style={inputStyle} /></Field>
+        <Field label="登入用 Email">
+          <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="用於登入地政士後台，請填寫常用信箱" style={inputStyle} />
+        </Field>
+        <Field label="登入密碼（至少6碼）">
+          <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder="設定一組密碼，之後登入後台使用" style={inputStyle} />
+        </Field>
         <Field label="聯繫方式（手機或Line ID）">
           <input value={form.contact} onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))} placeholder="手機號碼或Line ID" style={inputStyle} />
           <div style={{ fontSize: 11.5, color: "#B8AF96", marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}><Lock size={11} /> 不會公開顯示，僅在案件媒合成功、雙方確認後提供給該位委託民眾</div>
