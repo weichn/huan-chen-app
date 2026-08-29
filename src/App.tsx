@@ -630,8 +630,8 @@ function TopBar({ setView }) {
         </button>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
           <button onClick={() => setView({ name: "post-case" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SEAL}`, background: SEAL, color: PAPER, whiteSpace: "nowrap" }}>民眾免費發出案件需求找地政士</button>
-          <button onClick={() => setView({ name: "my-cases" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${GOOD}`, background: "transparent", color: GOOD, whiteSpace: "nowrap" }}>查詢我的案件</button>
-          <button onClick={() => setView({ name: "agent-console" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SURVEY}`, background: "transparent", color: SURVEY, whiteSpace: "nowrap" }}>地政士後台</button>
+          <button onClick={() => setView({ name: "my-cases" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${GOOD}`, background: "transparent", color: GOOD, whiteSpace: "nowrap" }}>民眾查詢我的案件</button>
+          <button onClick={() => setView({ name: "agent-console" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SURVEY}`, background: "transparent", color: SURVEY, whiteSpace: "nowrap" }}>地政士登錄後台</button>
           <button onClick={() => setView({ name: "join" })} style={{ padding: "9px 14px", borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${SEAL}`, background: SEAL, color: PAPER, whiteSpace: "nowrap" }}>地政士免費註冊送點數</button>
         </div>
       </div>
