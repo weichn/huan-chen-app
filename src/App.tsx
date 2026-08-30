@@ -673,30 +673,20 @@ function HomeView({ agents, cases, setView, onMount }) {
       </section>
 
       <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
-        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>全台服務範圍</div>
-        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>全台縣市媒合狀態</h2>
-        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>
-          民眾可於全台免費發布需求；已有在地地政士的縣市可優先媒合，其餘縣市持續招募專業地政士加入。
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-          {TAIWAN_REGIONS.map((region) => {
-            const count = agents.filter((a) => (a.regions || []).includes(region)).length;
-            const hasAgent = count > 0;
-            return (
-              <div key={region} style={{ background: hasAgent ? "#EFF3ED" : PAPER, border: `1px solid ${hasAgent ? GOOD : LINE_C}`, borderRadius: 6, padding: "16px 18px" }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 8 }}>📍 {region}</div>
-                {hasAgent ? (
-                  <div style={{ fontSize: 12.5, color: GOOD, display: "flex", alignItems: "center", gap: 5 }}>
-                    <CheckCircle2 size={14} /> 已有 {count} 位地政士
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12.5, color: WARN, display: "flex", alignItems: "center", gap: 5 }}>
-                    📣 招募在地地政士中
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>公開案件池</div>
+        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>目前的案件需求</h2>
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>地政士可點選任一案件查看詳情並回覆。民眾真實聯繫方式不會顯示。</p>
+
+        {openCases.length === 0 && (
+          <div style={{ padding: "40px 0", textAlign: "center", color: INK_SOFT, fontSize: 14, border: `1px dashed ${LINE_C}`, borderRadius: 6 }}>
+            目前還沒有案件需求，發出第一筆需求看看吧。
+          </div>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+          {openCases.map((c) => (
+            <CaseCard key={c.id} theCase={c} onClick={() => setView({ name: "case", id: c.id })} />
+          ))}
         </div>
       </section>
 
@@ -740,6 +730,34 @@ function HomeView({ agents, cases, setView, onMount }) {
       })()}
 
       <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
+        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>全台服務範圍</div>
+        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>全台縣市媒合狀態</h2>
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>
+          民眾可於全台免費發布需求；已有在地地政士的縣市可優先媒合，其餘縣市持續招募專業地政士加入。
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+          {TAIWAN_REGIONS.map((region) => {
+            const count = agents.filter((a) => (a.regions || []).includes(region)).length;
+            const hasAgent = count > 0;
+            return (
+              <div key={region} style={{ background: hasAgent ? "#EFF3ED" : PAPER, border: `1px solid ${hasAgent ? GOOD : LINE_C}`, borderRadius: 6, padding: "16px 18px" }}>
+                <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 8 }}>📍 {region}</div>
+                {hasAgent ? (
+                  <div style={{ fontSize: 12.5, color: GOOD, display: "flex", alignItems: "center", gap: 5 }}>
+                    <CheckCircle2 size={14} /> 已有 {count} 位地政士
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: WARN, display: "flex", alignItems: "center", gap: 5 }}>
+                    📣 招募在地地政士中
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
         <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>運作方式</div>
         <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 24px" }}>公開發案，多位地政士主動回覆</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 1, background: LINE_C, border: `1px solid ${LINE_C}` }}>
@@ -753,24 +771,6 @@ function HomeView({ agents, cases, setView, onMount }) {
               <h3 style={{ fontSize: 15.5, margin: "0 0 8px", fontWeight: 700 }}>{title}</h3>
               <p style={{ fontSize: 13, color: INK_SOFT, lineHeight: 1.7, margin: 0 }}>{desc}</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
-        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>公開案件池</div>
-        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>目前的案件需求</h2>
-        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>地政士可點選任一案件查看詳情並回覆。民眾真實聯繫方式不會顯示。</p>
-
-        {openCases.length === 0 && (
-          <div style={{ padding: "40px 0", textAlign: "center", color: INK_SOFT, fontSize: 14, border: `1px dashed ${LINE_C}`, borderRadius: 6 }}>
-            目前還沒有案件需求，發出第一筆需求看看吧。
-          </div>
-        )}
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
-          {openCases.map((c) => (
-            <CaseCard key={c.id} theCase={c} onClick={() => setView({ name: "case", id: c.id })} />
           ))}
         </div>
       </section>
