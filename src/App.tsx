@@ -439,6 +439,13 @@ export default function App() {
     showToast(a.verified ? `已將 ${a.name} 標記為已查核` : `已取消 ${a.name} 的查核標記`);
   };
 
+  const toggleRecommendHidden = async (agentId) => {
+    const nextAgents = agents.map((a) => (a.id === agentId ? { ...a, hideFromRecommend: !a.hideFromRecommend } : a));
+    await persistAgents(nextAgents);
+    const a = nextAgents.find((x) => x.id === agentId);
+    showToast(a.hideFromRecommend ? `已將 ${a.name} 從推薦地政士中隱藏` : `已恢復 ${a.name} 在推薦地政士中的顯示`, a.hideFromRecommend ? "warn" : "default");
+  };
+
   const deleteAgent = async (agentId) => {
     const target = agents.find((a) => a.id === agentId);
     const { error } = await supabase.from("agents").delete().eq("id", agentId);
@@ -489,6 +496,7 @@ export default function App() {
             onLogout={() => { setAdminAuthed(false); setView({ name: "home" }); }}
             onToggleVerified={toggleVerified}
             onDeleteAgent={deleteAgent}
+            onToggleRecommendHidden={toggleRecommendHidden}
           />
         ) : (
           <AdminLoginView
@@ -712,7 +720,7 @@ function HomeView({ agents, cases, setView, onMount }) {
         const matchedCountOf = (agentId) => cases.filter((c) => c.status === "matched" && c.matchedAgentId === agentId).length;
         const recommended = agents
           .map((a) => ({ ...a, matchedCount: matchedCountOf(a.id) }))
-          .filter((a) => a.matchedCount > 0)
+          .filter((a) => a.matchedCount > 0 && !a.hideFromRecommend)
           .sort((a, b) => b.matchedCount - a.matchedCount)
           .slice(0, 3);
         if (recommended.length === 0) return null;
@@ -918,7 +926,7 @@ function AdminLoginView({ onBack, onLogin }) {
   );
 }
 
-function AgentVerifyCard({ agent: a, onToggleVerified, onDeleteAgent }) {
+function AgentVerifyCard({ agent: a, onToggleVerified, onDeleteAgent, onToggleRecommendHidden }) {
   const [showPhoto, setShowPhoto] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
@@ -928,6 +936,9 @@ function AgentVerifyCard({ agent: a, onToggleVerified, onDeleteAgent }) {
           <strong style={{ fontSize: 14 }}>{a.name} 地政士</strong>
           <span style={{ fontSize: 12.5, color: INK_SOFT, marginLeft: 8 }}>{a.contact || "（未填寫）"}</span>
           {a.email && <span style={{ fontSize: 11.5, color: "#B8AF96", marginLeft: 8 }}>· {a.email}</span>}
+          {a.hideFromRecommend && (
+            <span style={{ fontSize: 10.5, color: WARN, border: `1px solid ${WARN}`, borderRadius: 99, padding: "2px 8px", marginLeft: 8 }}>已從推薦地政士隱藏</span>
+          )}
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button
@@ -935,6 +946,12 @@ function AgentVerifyCard({ agent: a, onToggleVerified, onDeleteAgent }) {
             style={{ fontSize: 10.5, color: a.verified ? GOOD : WARN, border: `1px solid ${a.verified ? GOOD : WARN}`, borderRadius: 99, padding: "5px 12px", background: "none", cursor: "pointer", fontWeight: 700 }}
           >
             {a.verified ? "✓ 已查核（點此取消）" : "標記為已查核"}
+          </button>
+          <button
+            onClick={() => onToggleRecommendHidden(a.id)}
+            style={{ fontSize: 10.5, color: a.hideFromRecommend ? INK_SOFT : SURVEY, border: `1px solid ${a.hideFromRecommend ? INK_SOFT : SURVEY}`, borderRadius: 99, padding: "5px 12px", background: "none", cursor: "pointer", fontWeight: 700 }}
+          >
+            {a.hideFromRecommend ? "恢復顯示於推薦地政士" : "從推薦地政士隱藏"}
           </button>
           <button
             onClick={() => setConfirmingDelete(true)}
@@ -992,7 +1009,7 @@ function AgentVerifyCard({ agent: a, onToggleVerified, onDeleteAgent }) {
   );
 }
 
-function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDeleteMessage, onForceBan, onUnban, onLogout, onToggleVerified, onDeleteAgent }) {
+function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDeleteMessage, onForceBan, onUnban, onLogout, onToggleVerified, onDeleteAgent, onToggleRecommendHidden }) {
   const [tab, setTab] = useState("overview"); // overview | messages
   const todayStr = new Date().toISOString().slice(0, 10);
   const dayKeys = Object.keys(visits).sort().reverse();
@@ -1080,7 +1097,7 @@ function AdminDashboardView({ agents, cases, transactions, visits, onBack, onDel
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
             {agents.length === 0 && <div style={{ padding: 16, textAlign: "center", color: INK_SOFT, background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6 }}>尚無資料</div>}
             {[...agents].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0)).map((a) => (
-              <AgentVerifyCard key={a.id} agent={a} onToggleVerified={onToggleVerified} onDeleteAgent={onDeleteAgent} />
+              <AgentVerifyCard key={a.id} agent={a} onToggleVerified={onToggleVerified} onDeleteAgent={onDeleteAgent} onToggleRecommendHidden={onToggleRecommendHidden} />
             ))}
           </div>
 
