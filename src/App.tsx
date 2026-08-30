@@ -709,7 +709,12 @@ function HomeView({ agents, cases, setView, onMount }) {
       </section>
 
       {(() => {
-        const recommended = agents.filter((a) => a.verified).sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 3);
+        const matchedCountOf = (agentId) => cases.filter((c) => c.status === "matched" && c.matchedAgentId === agentId).length;
+        const recommended = agents
+          .map((a) => ({ ...a, matchedCount: matchedCountOf(a.id) }))
+          .filter((a) => a.matchedCount > 0)
+          .sort((a, b) => b.matchedCount - a.matchedCount)
+          .slice(0, 3);
         if (recommended.length === 0) return null;
         return (
           <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
@@ -718,22 +723,22 @@ function HomeView({ agents, cases, setView, onMount }) {
               <Star size={22} color={GOLD} fill={GOLD} /> 推薦地政士
             </h2>
             <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>
-              為保障雙方隱私，聯絡方式將於媒合成功後提供。以下星等與完成案件數為示範資料，正式上線後將改為真實媒合評價。
+              為保障雙方隱私，聯絡方式將於媒合成功後提供。以下為平台上真實已完成媒合次數較多的地政士。
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
               {recommended.map((a) => (
                 <div key={a.id} style={{ background: "#fff", border: `1px solid ${LINE_C}`, borderRadius: 6, padding: 20 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: GOOD, border: `1px solid ${GOOD}`, borderRadius: 99, padding: "3px 10px", marginBottom: 12 }}>
-                    <Shield size={11} /> 認證地政士
-                  </span>
+                  {a.verified && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: GOOD, border: `1px solid ${GOOD}`, borderRadius: 99, padding: "3px 10px", marginBottom: 12 }}>
+                      <Shield size={11} /> 認證地政士
+                    </span>
+                  )}
                   <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>{a.name} 地政士</div>
                   <div style={{ fontSize: 12.5, color: INK_SOFT, marginBottom: 10 }}>📍 {(a.regions || []).join("、")}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 10 }}>
-                    {[0, 1, 2, 3, 4].map((i) => <Star key={i} size={15} color={GOLD} fill={GOLD} />)}
-                    <span style={{ fontSize: 12.5, color: INK_SOFT, marginLeft: 4 }}>5.0 分（示範）</span>
-                  </div>
                   <div style={{ fontSize: 12.5, color: INK_SOFT, marginBottom: 4 }}>專長：{(a.tags || []).join("、") || "—"}</div>
-                  <div style={{ fontSize: 12.5, color: INK_SOFT, marginBottom: 16 }}>完成案件：128 件（示範）</div>
+                  <div style={{ fontSize: 13, color: SEAL, fontWeight: 700, marginBottom: 16, display: "flex", alignItems: "center", gap: 5 }}>
+                    <CheckCircle2 size={14} /> 已透過平台完成 {a.matchedCount} 件媒合
+                  </div>
                   <button
                     onClick={() => setView({ name: "post-case" })}
                     style={{ width: "100%", padding: "10px 0", borderRadius: 3, border: "none", background: SEAL, color: PAPER, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
