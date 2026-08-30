@@ -664,11 +664,11 @@ function HomeView({ agents, cases, setView, onMount }) {
           辦過戶、報稅、繼承登記，銀行／民間抵押設定，<br />
           先看看<span style={{ color: SEAL }}>真實的人</span>怎麼說。
         </h1>
-        <p style={{ fontSize: 15.5, lineHeight: 1.85, color: INK_SOFT, maxWidth: 540, margin: "0 0 14px" }}>
+        <p style={{ fontSize: "clamp(13px, 2.3vw, 18px)", lineHeight: 1.85, color: INK_SOFT, textAlign: "center", whiteSpace: "nowrap", margin: "0 0 14px" }}>
           發出您的案件需求，多位地政士會主動回覆，您可以比較評價與回覆內容後再決定要委託給誰。
         </p>
-        <div style={{ fontSize: 13, color: GOOD, background: "#EFF3ED", display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 99, marginBottom: 28 }}>
-          <Coins size={14} /> 地政士免費登錄，立即贈送點數作為回覆額度
+        <div style={{ fontSize: 16, color: GOOD, background: "#EFF3ED", display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 99, marginBottom: 28 }}>
+          <Coins size={17} /> 地政士免費登錄，立即贈送點數作為回覆額度
         </div>
       </section>
 
