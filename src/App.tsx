@@ -48,9 +48,9 @@ const TAIWAN_REGIONS = [
 ];
 
 const SEED_AGENTS = [
-  { id: "agent-001", name: "林○○", contact: "0912-345-678（示範）", regions: ["桃園市", "新北市"], tags: ["繼承登記", "所有權移轉登記（買賣過戶）"], verified: true, points: 6, bio: "執業15年，專長繼承登記與不動產過戶，案件量大但回覆迅速。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範地政士事務所", firmAddress: "桃園市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
-  { id: "agent-002", name: "陳○○", contact: "0923-456-789（示範）", regions: ["新北市"], tags: ["銀行抵押權設定", "民間抵押權設定"], verified: true, points: 1, bio: "專辦各類抵押權設定與塗銷，與多家銀行配合流程熟悉。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範代書事務所", firmAddress: "新北市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
-  { id: "agent-003", name: "黃○○", contact: "0934-567-890（示範）", regions: ["台中市"], tags: ["土地分割登記", "實價登錄申報"], verified: true, points: 9, bio: "土地測量與分割合併案件經驗豐富，亦提供實價登錄申報諮詢。", banned: false, licenseNo: "xx年第xxxxxxx號（示範）", certNo: "xx年第xxxxxxx號（示範）", firmName: "示範土地登記事務所", firmAddress: "台中市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
+  { id: "agent-001", name: "林○○", contact: "0912-345-678（示範）", regions: ["桃園市", "新北市"], tags: ["繼承登記", "所有權移轉登記（買賣過戶）"], verified: true, points: 6, bio: "執業15年，專長繼承登記與不動產過戶，案件量大但回覆迅速。", banned: false, licenseNo: "112年桃地士字第001234號（示範）", certNo: "(112) 台內地登字第005678號（示範）", firmName: "示範地政士事務所", firmAddress: "桃園市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
+  { id: "agent-002", name: "陳○○", contact: "0923-456-789（示範）", regions: ["新北市"], tags: ["銀行抵押權設定", "民間抵押權設定"], verified: true, points: 1, bio: "專辦各類抵押權設定與塗銷，與多家銀行配合流程熟悉。", banned: false, licenseNo: "111年新地士字第002345號（示範）", certNo: "(111) 台內地登字第006789號（示範）", firmName: "示範代書事務所", firmAddress: "新北市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
+  { id: "agent-003", name: "黃○○", contact: "0934-567-890（示範）", regions: ["台中市"], tags: ["土地分割登記", "實價登錄申報"], verified: true, points: 9, bio: "土地測量與分割合併案件經驗豐富，亦提供實價登錄申報諮詢。", banned: false, licenseNo: "113年中地士字第003456號（示範）", certNo: "(113) 台內地登字第007890號（示範）", firmName: "示範土地登記事務所", firmAddress: "台中市xx區xx路xx號xx樓（示範）", guildName: "社團法人xx市地政士公會（示範）" },
 ];
 
 function uid(p = "id") { return `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
@@ -1614,10 +1614,10 @@ function AgentProfileEditor({ agent, onUpdateProfile }) {
         </div>
       </div>
       <Field label="執照字號">
-        <input value={form.licenseNo} onChange={(e) => setForm((f) => ({ ...f, licenseNo: e.target.value }))} placeholder="例如：xx年第xxxxxxx號" style={inputStyle} />
+        <input value={form.licenseNo} onChange={(e) => setForm((f) => ({ ...f, licenseNo: e.target.value }))} placeholder="例如：xxx年xx地士字第xxxxxx號" style={inputStyle} />
       </Field>
       <Field label="地政士證書字號">
-        <input value={form.certNo} onChange={(e) => setForm((f) => ({ ...f, certNo: e.target.value }))} placeholder="例如：xx年第xxxxxxx號" style={inputStyle} />
+        <input value={form.certNo} onChange={(e) => setForm((f) => ({ ...f, certNo: e.target.value }))} placeholder="例如：(xxx) 台內地登字第xxxxxx號" style={inputStyle} />
       </Field>
       <Field label="事務所名稱">
         <input value={form.firmName} onChange={(e) => setForm((f) => ({ ...f, firmName: e.target.value }))} placeholder="例如：xx地政士事務所" style={inputStyle} />
@@ -1934,10 +1934,10 @@ function JoinView({ onBack, onSubmit }) {
           </div>
         </div>
         <Field label="執照字號">
-          <input value={form.licenseNo} onChange={(e) => setForm((f) => ({ ...f, licenseNo: e.target.value }))} placeholder="例如：xx年第xxxxxxx號" style={inputStyle} />
+          <input value={form.licenseNo} onChange={(e) => setForm((f) => ({ ...f, licenseNo: e.target.value }))} placeholder="例如：xxx年xx地士字第xxxxxx號" style={inputStyle} />
         </Field>
         <Field label="地政士證書字號">
-          <input value={form.certNo} onChange={(e) => setForm((f) => ({ ...f, certNo: e.target.value }))} placeholder="例如：xx年第xxxxxxx號" style={inputStyle} />
+          <input value={form.certNo} onChange={(e) => setForm((f) => ({ ...f, certNo: e.target.value }))} placeholder="例如：(xxx) 台內地登字第xxxxxx號" style={inputStyle} />
         </Field>
         <Field label="事務所名稱">
           <input value={form.firmName} onChange={(e) => setForm((f) => ({ ...f, firmName: e.target.value }))} placeholder="例如：xx地政士事務所" style={inputStyle} />
