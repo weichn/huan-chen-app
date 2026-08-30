@@ -673,6 +673,24 @@ function HomeView({ agents, cases, setView, onMount }) {
       </section>
 
       <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
+        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>運作方式</div>
+        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 24px" }}>公開發案，多位地政士主動回覆</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 1, background: LINE_C, border: `1px solid ${LINE_C}` }}>
+          {[
+            ["STEP 01", "發出案件需求", "填寫基本資料與案件問題，您的聯繫方式只有平台與您自己看得到，不會公開。"],
+            ["STEP 02", "多位地政士主動回覆", "案件公開後，地政士可各自回覆（使用點數），地政士之間互不可見彼此回覆內容，僅顯示有幾位在回覆中。"],
+            ["STEP 03", "比較後發案，雙方確認", "選定一位地政士後點擊「發案」，雙方都確認後才解鎖真實聯繫方式，正式接洽。"],
+          ].map(([tag, title, desc]) => (
+            <div key={tag} style={{ background: PAPER, padding: "24px 20px" }}>
+              <div className="mono" style={{ fontSize: 12, color: SURVEY, marginBottom: 10 }}>{tag}</div>
+              <h3 style={{ fontSize: 15.5, margin: "0 0 8px", fontWeight: 700 }}>{title}</h3>
+              <p style={{ fontSize: 13, color: INK_SOFT, lineHeight: 1.7, margin: 0 }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
         <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>公開案件池</div>
         <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>目前的案件需求</h2>
         <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 22px" }}>地政士可點選任一案件查看詳情並回覆。民眾真實聯繫方式不會顯示。</p>
@@ -754,24 +772,6 @@ function HomeView({ agents, cases, setView, onMount }) {
               </div>
             );
           })}
-        </div>
-      </section>
-
-      <section style={{ maxWidth: 1140, margin: "0 auto", padding: "10px 20px 50px" }}>
-        <div style={{ fontSize: 13, letterSpacing: "0.1em", color: SEAL, fontWeight: 900, marginBottom: 10 }}>運作方式</div>
-        <h2 className="serif" style={{ fontWeight: 900, fontSize: 24, margin: "0 0 24px" }}>公開發案，多位地政士主動回覆</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 1, background: LINE_C, border: `1px solid ${LINE_C}` }}>
-          {[
-            ["STEP 01", "發出案件需求", "填寫基本資料與案件問題，您的聯繫方式只有平台與您自己看得到，不會公開。"],
-            ["STEP 02", "多位地政士主動回覆", "案件公開後，地政士可各自回覆（使用點數），地政士之間互不可見彼此回覆內容，僅顯示有幾位在回覆中。"],
-            ["STEP 03", "比較後發案，雙方確認", "選定一位地政士後點擊「發案」，雙方都確認後才解鎖真實聯繫方式，正式接洽。"],
-          ].map(([tag, title, desc]) => (
-            <div key={tag} style={{ background: PAPER, padding: "24px 20px" }}>
-              <div className="mono" style={{ fontSize: 12, color: SURVEY, marginBottom: 10 }}>{tag}</div>
-              <h3 style={{ fontSize: 15.5, margin: "0 0 8px", fontWeight: 700 }}>{title}</h3>
-              <p style={{ fontSize: 13, color: INK_SOFT, lineHeight: 1.7, margin: 0 }}>{desc}</p>
-            </div>
-          ))}
         </div>
       </section>
 
