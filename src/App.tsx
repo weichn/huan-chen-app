@@ -1312,8 +1312,8 @@ function MyCasesView({ cases, onBack, onOpenCase }) {
 
 
 function PostCaseView({ onBack, onSubmit }) {
-  const [form, setForm] = useState({ customerName: "", customerContact: "", region: "", caseType: "", problemText: "" });
-  const valid = form.customerName.trim() && form.customerContact.trim() && form.region && form.caseType && form.problemText.trim();
+  const [form, setForm] = useState({ customerName: "", customerContact: "", region: "", caseType: [], problemText: "" });
+  const valid = form.customerName.trim() && form.customerContact.trim() && form.region && form.caseType.length > 0 && form.problemText.trim();
 
   return (
     <main style={{ maxWidth: 600, margin: "0 auto", padding: "24px 20px 80px" }}>
@@ -1338,17 +1338,14 @@ function PostCaseView({ onBack, onSubmit }) {
             {TAIWAN_REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </Field>
-        <Field label="想辦理的案件類型">
-          <select value={form.caseType} onChange={(e) => setForm((f) => ({ ...f, caseType: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
-            <option value="">請選擇案件類型</option>
-            {SERVICE_TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+        <Field label="想辦理的案件類型（可多選）">
+          <MultiSelectDropdown options={SERVICE_TAGS} selected={form.caseType} onChange={(caseType) => setForm((f) => ({ ...f, caseType }))} placeholder="選擇想辦理的案件類型" />
         </Field>
         <Field label="案件問題說明">
           <textarea value={form.problemText} onChange={(e) => setForm((f) => ({ ...f, problemText: e.target.value }))} placeholder="請描述您遇到的問題或需求。為防止個資洩漏被詐騙及不肖人士利用，請勿留下電話、Line等聯絡方式" rows={4} style={{ ...inputStyle, resize: "vertical" }} />
         </Field>
 
-        <button disabled={!valid} onClick={() => onSubmit(form)} style={{ width: "100%", padding: "12px 0", borderRadius: 3, border: "none", fontSize: 14.5, fontWeight: 700, cursor: valid ? "pointer" : "not-allowed", background: valid ? SEAL : LINE_C, color: valid ? PAPER : "#9C9588", marginTop: 8 }}>
+        <button disabled={!valid} onClick={() => onSubmit({ ...form, caseType: form.caseType.join("、") })} style={{ width: "100%", padding: "12px 0", borderRadius: 3, border: "none", fontSize: 14.5, fontWeight: 700, cursor: valid ? "pointer" : "not-allowed", background: valid ? SEAL : LINE_C, color: valid ? PAPER : "#9C9588", marginTop: 8 }}>
           公開發出需求
         </button>
       </div>
